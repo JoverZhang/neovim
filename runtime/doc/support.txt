@@ -12,9 +12,9 @@ Support                                                              *support*
 Supported platforms					 *supported-platforms*
 
 `System`          `Tier`      `Versions`                  `Tested versions`
-Linux            1      >= 2.6.32, glibc >= 2.12     Ubuntu 22.04
+Linux            1      >= 2.6.32, glibc >= 2.12     Ubuntu 24.04
 macOS (Intel)    1      >= 11                        macOS 12
-macOS (M1)       1      >= 11                        macOS 14
+macOS (M1)       1      >= 11                        macOS 15
 Windows 64-bit   1      >= Windows 10 Version 1809   Windows Server 2022
 FreeBSD          1      >= 10                        FreeBSD 13
 OpenBSD          2      >= 7
@@ -24,6 +24,9 @@ Windows 64-bit   3      < Windows 10 Version 1809
 Note: Windows 10 "Version 1809" or later is required for |:terminal|. To check
 your Windows version, run the "winver" command and look for "Version xxxx"
 (NOT "OS Build").
+
+Note: On Windows "Server" you may need to install vcruntime140.dll:
+https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
 
 Support types ~
 

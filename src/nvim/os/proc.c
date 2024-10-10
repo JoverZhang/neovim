@@ -37,24 +37,24 @@
 
 #include "nvim/log.h"
 #include "nvim/memory.h"
-#include "nvim/os/process.h"
+#include "nvim/os/proc.h"
 
 #ifdef MSWIN
 # include "nvim/api/private/helpers.h"
 #endif
 
 #ifdef INCLUDE_GENERATED_DECLARATIONS
-# include "os/process.c.generated.h"
+# include "os/proc.c.generated.h"
 #endif
 
 #ifdef MSWIN
-static bool os_proc_tree_kill_rec(HANDLE process, int sig)
+static bool os_proc_tree_kill_rec(HANDLE proc, int sig)
 {
-  if (process == NULL) {
+  if (proc == NULL) {
     return false;
   }
   PROCESSENTRY32 pe;
-  DWORD pid = GetProcessId(process);
+  DWORD pid = GetProcessId(proc);
 
   if (pid != 0) {
     HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -77,7 +77,7 @@ static bool os_proc_tree_kill_rec(HANDLE process, int sig)
   }
 
 theend:
-  return (bool)TerminateProcess(process, (unsigned)sig);
+  return (bool)TerminateProcess(proc, (unsigned)sig);
 }
 /// Kills process `pid` and its descendants recursively.
 bool os_proc_tree_kill(int pid, int sig)
@@ -230,9 +230,9 @@ int os_proc_children(int ppid, int **proc_list, size_t *proc_count)
 ///
 /// @param pid Process to inspect.
 /// @return Map of process properties, empty on error.
-Dictionary os_proc_info(int pid, Arena *arena)
+Dict os_proc_info(int pid, Arena *arena)
 {
-  Dictionary pinfo = ARRAY_DICT_INIT;
+  Dict pinfo = ARRAY_DICT_INIT;
   PROCESSENTRY32 pe;
 
   // Snapshot of all processes.  This is used instead of:

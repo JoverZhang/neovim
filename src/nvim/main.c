@@ -43,7 +43,7 @@
 #include "nvim/eval/userfunc.h"
 #include "nvim/event/loop.h"
 #include "nvim/event/multiqueue.h"
-#include "nvim/event/process.h"
+#include "nvim/event/proc.h"
 #include "nvim/event/stream.h"
 #include "nvim/ex_cmds.h"
 #include "nvim/ex_docmd.h"
@@ -174,7 +174,7 @@ bool event_teardown(void)
   loop_poll_events(&main_loop, 0);  // Drain thread_events, fast_events.
   input_stop();
   channel_teardown();
-  process_teardown(&main_loop);
+  proc_teardown(&main_loop);
   timer_teardown();
   server_teardown();
   signal_teardown();
@@ -351,7 +351,6 @@ int main(int argc, char **argv)
 
   // NORETURN: Start builtin UI client.
   if (ui_client_channel_id) {
-    time_finish();
     ui_client_run(remote_ui);  // NORETURN
   }
   assert(!ui_client_channel_id && !use_builtin_ui);
@@ -968,8 +967,8 @@ static void remote_request(mparm_T *params, int remote_args, char *server_addr, 
     os_exit(2);
   }
 
-  if (o.type == kObjectTypeDictionary) {
-    rvobj.data.dictionary = o.data.dictionary;
+  if (o.type == kObjectTypeDict) {
+    rvobj.data.dict = o.data.dict;
   } else {
     fprintf(stderr, "vim._cs_remote returned unexpected value\n");
     os_exit(2);
@@ -978,32 +977,32 @@ static void remote_request(mparm_T *params, int remote_args, char *server_addr, 
   TriState should_exit = kNone;
   TriState tabbed = kNone;
 
-  for (size_t i = 0; i < rvobj.data.dictionary.size; i++) {
-    if (strequal(rvobj.data.dictionary.items[i].key.data, "errmsg")) {
-      if (rvobj.data.dictionary.items[i].value.type != kObjectTypeString) {
+  for (size_t i = 0; i < rvobj.data.dict.size; i++) {
+    if (strequal(rvobj.data.dict.items[i].key.data, "errmsg")) {
+      if (rvobj.data.dict.items[i].value.type != kObjectTypeString) {
         fprintf(stderr, "vim._cs_remote returned an unexpected type for 'errmsg'\n");
         os_exit(2);
       }
-      fprintf(stderr, "%s\n", rvobj.data.dictionary.items[i].value.data.string.data);
+      fprintf(stderr, "%s\n", rvobj.data.dict.items[i].value.data.string.data);
       os_exit(2);
-    } else if (strequal(rvobj.data.dictionary.items[i].key.data, "result")) {
-      if (rvobj.data.dictionary.items[i].value.type != kObjectTypeString) {
+    } else if (strequal(rvobj.data.dict.items[i].key.data, "result")) {
+      if (rvobj.data.dict.items[i].value.type != kObjectTypeString) {
         fprintf(stderr, "vim._cs_remote returned an unexpected type for 'result'\n");
         os_exit(2);
       }
-      printf("%s", rvobj.data.dictionary.items[i].value.data.string.data);
-    } else if (strequal(rvobj.data.dictionary.items[i].key.data, "tabbed")) {
-      if (rvobj.data.dictionary.items[i].value.type != kObjectTypeBoolean) {
+      printf("%s", rvobj.data.dict.items[i].value.data.string.data);
+    } else if (strequal(rvobj.data.dict.items[i].key.data, "tabbed")) {
+      if (rvobj.data.dict.items[i].value.type != kObjectTypeBoolean) {
         fprintf(stderr, "vim._cs_remote returned an unexpected type for 'tabbed'\n");
         os_exit(2);
       }
-      tabbed = rvobj.data.dictionary.items[i].value.data.boolean ? kTrue : kFalse;
-    } else if (strequal(rvobj.data.dictionary.items[i].key.data, "should_exit")) {
-      if (rvobj.data.dictionary.items[i].value.type != kObjectTypeBoolean) {
+      tabbed = rvobj.data.dict.items[i].value.data.boolean ? kTrue : kFalse;
+    } else if (strequal(rvobj.data.dict.items[i].key.data, "should_exit")) {
+      if (rvobj.data.dict.items[i].value.type != kObjectTypeBoolean) {
         fprintf(stderr, "vim._cs_remote returned an unexpected type for 'should_exit'\n");
         os_exit(2);
       }
-      should_exit = rvobj.data.dictionary.items[i].value.data.boolean ? kTrue : kFalse;
+      should_exit = rvobj.data.dict.items[i].value.data.boolean ? kTrue : kFalse;
     }
   }
   if (should_exit == kNone || tabbed == kNone) {
@@ -1514,7 +1513,7 @@ static void init_startuptime(mparm_T *paramp)
   }
   for (int i = 1; i < paramp->argc - 1; i++) {
     if (STRICMP(paramp->argv[i], "--startuptime") == 0) {
-      time_init(paramp->argv[i + 1], is_embed ? "Embedded" : "Primary/TUI");
+      time_init(paramp->argv[i + 1], is_embed ? "Embedded" : "Primary (or UI client)");
       time_start("--- NVIM STARTING ---");
       break;
     }
@@ -2207,7 +2206,7 @@ static void usage(void)
   printf(_("  --headless            Don't start a user interface\n"));
   printf(_("  --listen <address>    Serve RPC API from this address\n"));
   printf(_("  --remote[-subcommand] Execute commands remotely on a server\n"));
-  printf(_("  --server <address>    Specify RPC server to send commands to\n"));
+  printf(_("  --server <address>    Connect to this Nvim server\n"));
   printf(_("  --startuptime <file>  Write startup timing messages to <file>\n"));
   printf(_("\nSee \":help startup-options\" for all options.\n"));
 }

@@ -62,12 +62,12 @@ Defaults                                                    *nvim-defaults*
 - 'isfname' does not include ":" (on Windows). Drive letters are handled
   correctly without it. (Use |gF| for filepaths suffixed with ":line:col").
 - 'joinspaces' is disabled
-- 'jumpoptions' defaults to "unload"
+- 'jumpoptions' defaults to "clean"
 - 'langnoremap' is enabled
 - 'langremap' is disabled
 - 'laststatus' defaults to 2 (statusline is always shown)
 - 'listchars' defaults to "tab:> ,trail:-,nbsp:+"
-- 'mouse' defaults to "nvi"
+- 'mouse' defaults to "nvi", see |default-mouse| for details
 - 'mousemodel' defaults to "popup_setpos"
 - 'nrformats' defaults to "bin,hex"
 - 'path' defaults to ".,,". The C ftplugin adds "/usr/include" if it exists.
@@ -101,12 +101,14 @@ Defaults                                                    *nvim-defaults*
 
 DEFAULT MOUSE
                                                 *default-mouse* *disable-mouse*
-By default the mouse is enabled, and <RightMouse> opens a |popup-menu| with
-standard actions ("Cut", "Copy", "Paste", …). Mouse is NOT enabled in
-|command-mode| or the |more-prompt|, so you can temporarily disable it just by
-typing ":".
+By default the mouse is enabled. This means |scroll-mouse-wheel| will scroll
+the window instead of moving the cursor; <LeftMouse> click places the cursor;
+and <RightMouse> click opens the default |popup-menu| with standard actions.
 
-Or you can disable the popup-menu using any of the following:
+Mouse is NOT enabled in |Cmdline-mode| or the |more-prompt|, so you can
+temporarily disable it just by typing ":". Or if you want to partially or
+fully disable the mouse or popup-menu, do any of the following:
+
 - Disable mouse completely by unsetting the 'mouse' option: >vim
   set mouse=
 - Change the 'mousemodel', so <RightMouse> extends selection instead of
@@ -154,6 +156,11 @@ of these in your config by simply removing the mapping, e.g. ":unmap Y".
 - [D |[D-default|
 - ]D |]D-default|
 - <C-W>d |CTRL-W_d-default|
+- |[q|, |]q|, |[Q|, |]Q|, |[CTRL-Q|, |]CTRL-Q|
+- |[l|, |]l|, |[L|, |]L|, |[CTRL-L|, |]CTRL-L|
+- |[t|, |]t|, |[T|, |]T|, |[CTRL-T|, |]CTRL-T|
+- |[a|, |]a|, |[A|, |]A|
+- |[b|, |]b|, |[B|, |]B|
 - Nvim LSP client defaults |lsp-defaults|
   - K |K-lsp-default|
 
@@ -348,7 +355,7 @@ string options work.
                 and |:command-preview| commands
 - 'jumpoptions'
     - "view" tries to restore |mark-view| when moving through the jumplist.
-    - "unload" removes unloaded buffers from the jumplist.
+    - "clean" removes unloaded buffers from the jumplist.
 - the |jumplist|, |changelist|, |alternate-file| or using |mark-motions|.
 - 'laststatus'  global statusline support
 - 'mousescroll' amount to scroll by when scrolling with a mouse

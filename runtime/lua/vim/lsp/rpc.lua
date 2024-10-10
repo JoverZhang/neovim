@@ -3,7 +3,7 @@ local log = require('vim.lsp.log')
 local protocol = require('vim.lsp.protocol')
 local validate, schedule, schedule_wrap = vim.validate, vim.schedule, vim.schedule_wrap
 
-local is_win = uv.os_uname().version:find('Windows')
+local is_win = vim.fn.has('win32') == 1
 
 --- Checks whether a given path exists and is a directory.
 ---@param filename string path to check
@@ -550,7 +550,7 @@ local function new_client(dispatchers, transport)
 end
 
 ---@class vim.lsp.rpc.PublicClient
----@field request fun(method: string, params: table?, callback: fun(err: lsp.ResponseError|nil, result: any), notify_reply_callback: fun(integer)|nil):boolean,integer? see |vim.lsp.rpc.request()|
+---@field request fun(method: string, params: table?, callback: fun(err: lsp.ResponseError|nil, result: any), notify_reply_callback: fun(message_id: integer)|nil):boolean,integer? see |vim.lsp.rpc.request()|
 ---@field notify fun(method: string, params: any):boolean see |vim.lsp.rpc.notify()|
 ---@field is_closing fun(): boolean
 ---@field terminate fun()

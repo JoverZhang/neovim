@@ -246,7 +246,7 @@ static void set_init_default_backupskip(void)
       // note: the value (and therefore plen) may already include a path separator
       size_t itemsize = plen + (has_trailing_path_sep ? 0 : 1) + 2;
       char *item = xmalloc(itemsize);
-      // add a preceeding comma as a separator after the first item
+      // add a preceding comma as a separator after the first item
       size_t itemseplen = (ga.ga_len == 0) ? 0 : 1;
 
       size_t itemlen = (size_t)vim_snprintf(item, itemsize, "%s%s*", p,
@@ -1216,8 +1216,9 @@ static OptVal get_option_newval(OptIndex opt_idx, int opt_flags, set_prefix_T pr
     // Different ways to set a number option:
     // &            set to default value
     // <            set to global value
-    // <xx>         accept special key codes for 'wildchar'
-    // c            accept any non-digit for 'wildchar'
+    // <xx>         accept special key codes for 'wildchar' or 'wildcharm'
+    // ^x           accept ctrl key codes for 'wildchar' or 'wildcharm'
+    // c            accept any non-digit for 'wildchar' or 'wildcharm'
     // [-]0-9       set number
     // other        error
     arg++;
@@ -1239,7 +1240,7 @@ static OptVal get_option_newval(OptIndex opt_idx, int opt_flags, set_prefix_T pr
                    || (*arg != NUL && (!arg[1] || ascii_iswhite(arg[1]))
                        && !ascii_isdigit(*arg)))) {
       newval_num = string_to_key(arg);
-      if (newval_num == 0 && (OptInt *)varp != &p_wcm) {
+      if (newval_num == 0) {
         *errmsg = e_invarg;
         return newval;
       }
@@ -1524,7 +1525,9 @@ static int find_key_len(const char *arg_arg, size_t len, bool has_lt)
   // Don't use get_special_key_code() for t_xx, we don't want it to call
   // add_termcap_entry().
   if (len >= 4 && arg[0] == 't' && arg[1] == '_') {
-    key = TERMCAP2KEY((uint8_t)arg[2], (uint8_t)arg[3]);
+    if (!has_lt || arg[4] == '>') {
+      key = TERMCAP2KEY((uint8_t)arg[2], (uint8_t)arg[3]);
+    }
   } else if (has_lt) {
     arg--;  // put arg at the '<'
     int modifiers = 0;
@@ -1538,14 +1541,18 @@ static int find_key_len(const char *arg_arg, size_t len, bool has_lt)
 }
 
 /// Convert a key name or string into a key value.
-/// Used for 'wildchar' and 'cedit' options.
+/// Used for 'cedit', 'wildchar' and 'wildcharm' options.
 int string_to_key(char *arg)
 {
-  if (*arg == '<') {
+  if (*arg == '<' && arg[1]) {
     return find_key_len(arg + 1, strlen(arg), true);
   }
-  if (*arg == '^') {
-    return CTRL_CHR((uint8_t)arg[1]);
+  if (*arg == '^' && arg[1]) {
+    int key = CTRL_CHR((uint8_t)arg[1]);
+    if (key == 0) {  // ^@ is <Nul>
+      key = K_ZERO;
+    }
+    return key;
   }
   return (uint8_t)(*arg);
 }
@@ -5095,6 +5102,12 @@ void clear_winopt(winopt_T *wop)
 
 void didset_window_options(win_T *wp, bool valid_cursor)
 {
+  // Set w_leftcol or w_skipcol to zero.
+  if (wp->w_p_wrap) {
+    wp->w_leftcol = 0;
+  } else {
+    wp->w_skipcol = 0;
+  }
   check_colorcolumn(wp);
   briopt_check(wp);
   fill_culopt_flags(NULL, wp);
@@ -6438,30 +6451,29 @@ int get_sidescrolloff_value(win_T *wp)
   return (int)(wp->w_p_siso < 0 ? p_siso : wp->w_p_siso);
 }
 
-Dictionary get_vimoption(String name, int scope, buf_T *buf, win_T *win, Arena *arena, Error *err)
+Dict get_vimoption(String name, int scope, buf_T *buf, win_T *win, Arena *arena, Error *err)
 {
   OptIndex opt_idx = find_option_len(name.data, name.size);
   VALIDATE_S(opt_idx != kOptInvalid, "option (not found)", name.data, {
-    return (Dictionary)ARRAY_DICT_INIT;
+    return (Dict)ARRAY_DICT_INIT;
   });
 
   return vimoption2dict(&options[opt_idx], scope, buf, win, arena);
 }
 
-Dictionary get_all_vimoptions(Arena *arena)
+Dict get_all_vimoptions(Arena *arena)
 {
-  Dictionary retval = arena_dict(arena, kOptIndexCount);
+  Dict retval = arena_dict(arena, kOptIndexCount);
   for (OptIndex opt_idx = 0; opt_idx < kOptIndexCount; opt_idx++) {
-    Dictionary opt_dict = vimoption2dict(&options[opt_idx], OPT_GLOBAL, curbuf, curwin, arena);
-    PUT_C(retval, options[opt_idx].fullname, DICTIONARY_OBJ(opt_dict));
+    Dict opt_dict = vimoption2dict(&options[opt_idx], OPT_GLOBAL, curbuf, curwin, arena);
+    PUT_C(retval, options[opt_idx].fullname, DICT_OBJ(opt_dict));
   }
   return retval;
 }
 
-static Dictionary vimoption2dict(vimoption_T *opt, int req_scope, buf_T *buf, win_T *win,
-                                 Arena *arena)
+static Dict vimoption2dict(vimoption_T *opt, int req_scope, buf_T *buf, win_T *win, Arena *arena)
 {
-  Dictionary dict = arena_dict(arena, 13);
+  Dict dict = arena_dict(arena, 13);
 
   PUT_C(dict, "name", CSTR_AS_OBJ(opt->fullname));
   PUT_C(dict, "shortname", CSTR_AS_OBJ(opt->shortname));

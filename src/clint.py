@@ -848,7 +848,7 @@ def CheckIncludes(filename, lines, error):
             or filename.endswith('.in.h')
             or FileInfo(filename).RelativePath() in {
         'func_attr.h',
-        'os/pty_process.h',
+        'os/pty_proc.h',
     }):
         return
 
@@ -869,7 +869,7 @@ def CheckIncludes(filename, lines, error):
             "src/nvim/msgpack_rpc/unpacker.h",
             "src/nvim/option.h",
             "src/nvim/os/pty_conpty_win.h",
-            "src/nvim/os/pty_process_win.h",
+            "src/nvim/os/pty_proc_win.h",
                              ]
 
     skip_headers = [
@@ -881,6 +881,7 @@ def CheckIncludes(filename, lines, error):
             "nvim/func_attr.h",
             "termkey/termkey.h",
             "vterm/vterm.h",
+            "xdiff/xdiff.h",
             ]
 
     for i in check_includes_ignore:
@@ -1781,7 +1782,7 @@ def CheckSpacing(filename, clean_lines, linenum, error):
                    r'(?<!\bPMap)'
                    r'(?<!\bSet)'
                    r'(?<!\bArrayOf)'
-                   r'(?<!\bDictionaryOf)'
+                   r'(?<!\bDictOf)'
                    r'(?<!\bDict)'
                    r'\((?:const )?(?:struct )?[a-zA-Z_]\w*(?: *\*(?:const)?)*\)'
                    r' +'

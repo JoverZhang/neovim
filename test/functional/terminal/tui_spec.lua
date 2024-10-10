@@ -7,7 +7,7 @@
 local t = require('test.testutil')
 local n = require('test.functional.testnvim')()
 local Screen = require('test.functional.ui.screen')
-local tt = require('test.functional.terminal.testutil')
+local tt = require('test.functional.testterm')
 
 local eq = t.eq
 local feed_data = tt.feed_data
@@ -40,8 +40,8 @@ if t.skip(is_os('win')) then
 end
 
 describe('TUI', function()
-  local screen
-  local child_session
+  local screen --[[@type test.functional.ui.screen]]
+  local child_session --[[@type test.Session]]
   local child_exec_lua
 
   before_each(function()
@@ -975,6 +975,7 @@ describe('TUI', function()
       {3:-- TERMINAL --}                                    |
     ]])
     feed_data('\027[201~') -- End paste.
+    screen:expect_unchanged()
     feed_data('\027[27u') -- ESC: go to Normal mode.
     wait_for_mode('n')
     screen:expect([[
@@ -1106,7 +1107,7 @@ describe('TUI', function()
     screen:expect(expected_grid1)
     -- Dot-repeat/redo.
     feed_data('.')
-    screen:expect([[
+    local expected_grid2 = [[
       ESC:{6:^[} / CR:                                      |
       xline 1                                           |
       ESC:{6:^[} / CR:                                      |
@@ -1114,7 +1115,8 @@ describe('TUI', function()
       {5:[No Name] [+]                   5,1            Bot}|
                                                         |
       {3:-- TERMINAL --}                                    |
-    ]])
+    ]]
+    screen:expect(expected_grid2)
     -- Undo.
     feed_data('u')
     expect_child_buf_lines(expected_crlf)
@@ -1128,6 +1130,14 @@ describe('TUI', function()
     feed_data('\027[200~' .. table.concat(expected_lf, '\r\n') .. '\027[201~')
     screen:expect(expected_grid1)
     expect_child_buf_lines(expected_crlf)
+    -- Dot-repeat/redo.
+    feed_data('.')
+    screen:expect(expected_grid2)
+    -- Undo.
+    feed_data('u')
+    expect_child_buf_lines(expected_crlf)
+    feed_data('u')
+    expect_child_buf_lines({ '' })
   end)
 
   it('paste: cmdline-mode inserts 1 line', function()
@@ -1191,6 +1201,7 @@ describe('TUI', function()
     expect_cmdline('"stuff 1 more"')
     -- End the paste sequence.
     feed_data('\027[201~')
+    expect_cmdline('"stuff 1 more"')
     feed_data(' typed')
     expect_cmdline('"stuff 1 more typed"')
   end)
@@ -1234,6 +1245,7 @@ describe('TUI', function()
     feed_data('line 7\nline 8\n')
     -- Stop paste.
     feed_data('\027[201~')
+    screen:expect_unchanged()
     feed_data('\n') -- <CR> to dismiss hit-enter prompt
     expect_child_buf_lines({ 'foo', '' })
     -- Dot-repeat/redo is not modified by failed paste.
@@ -1281,8 +1293,44 @@ describe('TUI', function()
       {}
     )
     feed_data('\027[200~line A\nline B\n\027[201~')
+    expect_child_buf_lines({ '' })
     feed_data('ifoo\n\027[27u')
     expect_child_buf_lines({ 'foo', '' })
+  end)
+
+  it('paste: vim.paste() cancel (retval=false) with streaming #30462', function()
+    child_session:request(
+      'nvim_exec_lua',
+      [[
+        vim.paste = (function(overridden)
+          return function(lines, phase)
+            for i, line in ipairs(lines) do
+              if line:find('!') then
+                return false
+              end
+            end
+            return overridden(lines, phase)
+          end
+        end)(vim.paste)
+      ]],
+      {}
+    )
+    feed_data('A')
+    wait_for_mode('i')
+    feed_data('\027[200~aaa')
+    expect_child_buf_lines({ 'aaa' })
+    feed_data('bbb')
+    expect_child_buf_lines({ 'aaabbb' })
+    feed_data('ccc!') -- This chunk is cancelled.
+    expect_child_buf_lines({ 'aaabbb' })
+    feed_data('ddd\027[201~') -- This chunk is ignored.
+    expect_child_buf_lines({ 'aaabbb' })
+    feed_data('\027[27u')
+    wait_for_mode('n')
+    feed_data('.') -- Dot-repeat only includes chunks actually pasted.
+    expect_child_buf_lines({ 'aaabbbaaabbb' })
+    feed_data('$\027[200~eee\027[201~') -- A following paste works normally.
+    expect_child_buf_lines({ 'aaabbbaaabbbeee' })
   end)
 
   it("paste: 'nomodifiable' buffer", function()
@@ -1403,7 +1451,6 @@ describe('TUI', function()
     feed_data('\n')
     -- Send the "stop paste" sequence.
     feed_data('\027[201~')
-
     screen:expect([[
                                                         |
       pasted from terminal (1)                          |
@@ -1651,12 +1698,13 @@ describe('TUI', function()
     ]])
   end)
 
-  it('in nvim_list_uis()', function()
+  it('in nvim_list_uis(), sets nvim_set_client_info()', function()
     -- $TERM in :terminal.
     local exp_term = is_os('bsd') and 'builtin_xterm' or 'xterm-256color'
+    local ui_chan = 1
     local expected = {
       {
-        chan = 1,
+        chan = ui_chan,
         ext_cmdline = false,
         ext_hlstate = false,
         ext_linegrid = true,
@@ -1679,6 +1727,43 @@ describe('TUI', function()
     }
     local _, rv = child_session:request('nvim_list_uis')
     eq(expected, rv)
+
+    ---@type table
+    local expected_version = ({
+      child_session:request('nvim_exec_lua', 'return vim.version()', {}),
+    })[2]
+    -- vim.version() returns `prerelease` string. Coerce it to boolean.
+    expected_version.prerelease = not not expected_version.prerelease
+
+    local expected_chan_info = {
+      client = {
+        attributes = {
+          license = 'Apache 2',
+          -- pid = 5371,
+          website = 'https://neovim.io',
+        },
+        methods = {},
+        name = 'nvim-tui',
+        type = 'ui',
+        version = expected_version,
+      },
+      id = ui_chan,
+      mode = 'rpc',
+      stream = 'stdio',
+    }
+
+    local status, chan_info = child_session:request('nvim_get_chan_info', ui_chan)
+    ok(status)
+    local info = chan_info.client
+    ok(info.attributes.pid and info.attributes.pid > 0, 'PID', info.attributes.pid or 'nil')
+    ok(info.version.major >= 0)
+    ok(info.version.minor >= 0)
+    ok(info.version.patch >= 0)
+
+    -- Delete variable fields so we can deep-compare.
+    info.attributes.pid = nil
+
+    eq(expected_chan_info, chan_info)
   end)
 
   it('allows grid to assume wider ambiwidth chars than host terminal', function()
@@ -2111,7 +2196,7 @@ describe('TUI', function()
     finally(function()
       os.remove('testF')
     end)
-    local screen = tt.screen_setup(
+    local screen = tt.setup_screen(
       0,
       ('"%s" -u NONE -i NONE --cmd "set noswapfile noshowcmd noruler" --cmd "normal iabc" > /dev/null 2>&1 && cat testF && rm testF'):format(
         nvim_prog

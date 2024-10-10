@@ -333,13 +333,14 @@ between string and number-based options.
 			options which are different from the default.
 
 For buffer-local and window-local options:
-	Command		 global value	    local value ~
-      :set option=value	     set		set
- :setlocal option=value	      -			set
-:setglobal option=value	     set		 -
-      :set option?	      -		       display
- :setlocal option?	      -		       display
-:setglobal option?	    display		 -
+	Command		 global value	  local value	       condition ~
+      :set option=value	     set	      set
+ :setlocal option=value	      -		      set
+:setglobal option=value	     set	       -
+      :set option?	      -		     display	 local value is set
+      :set option?	    display	       -	 local value is not set
+ :setlocal option?	      -		     display
+:setglobal option?	    display	       -
 
 
 Global options with a local value			*global-local*
@@ -1275,9 +1276,10 @@ A jump table for the options with a short description can be found at |Q_op|.
 	The key used in Command-line Mode to open the command-line window.
 	Only non-printable keys are allowed.
 	The key can be specified as a single character, but it is difficult to
-	type.  The preferred way is to use the <> notation.  Examples: >vim
-		exe "set cedit=\<C-Y>"
-		exe "set cedit=\<Esc>"
+	type.  The preferred way is to use |key-notation| (e.g. <Up>, <C-F>) or
+	a letter preceded with a caret (e.g. `^F` is CTRL-F).  Examples: >vim
+		set cedit=^Y
+		set cedit=<Esc>
 <	|Nvi| also has this option, but it only uses the first character.
 	See |cmdwin|.
 
@@ -1422,11 +1424,10 @@ A jump table for the options with a short description can be found at |Q_op|.
 	used.  The command-line will cover the last line of the screen when
 	shown.
 
-	WARNING: `cmdheight=0` is considered experimental. Expect some
-	unwanted behaviour. Some 'shortmess' flags and similar
-	mechanism might fail to take effect, causing unwanted hit-enter
-	prompts.  Some informative messages, both from Nvim itself and
-	plugins, will not be displayed.
+	WARNING: `cmdheight=0` is EXPERIMENTAL. Expect some unwanted behaviour.
+	Some 'shortmess' flags and similar mechanism might fail to take effect,
+	causing unwanted hit-enter prompts.  Some informative messages, both
+	from Nvim itself and plugins, will not be displayed.
 
 						*'cmdwinheight'* *'cwh'*
 'cmdwinheight' 'cwh'	number	(default 7)
@@ -1526,6 +1527,16 @@ A jump table for the options with a short description can be found at |Q_op|.
 	more information.
 	This option cannot be set from a |modeline| or in the |sandbox|, for
 	security reasons.
+
+					*'completeitemalign'* *'cia'*
+'completeitemalign' 'cia'	string	(default "abbr,kind,menu")
+			global
+	A comma-separated list of |complete-items| that controls the alignment
+	and display order of items in the popup menu during Insert mode
+	completion. The supported values are abbr, kind, and menu. These
+	options allow to customize how the completion items are shown in the
+	popup menu.  Note: must always contain those three values in any
+	order.
 
 						*'completeopt'* *'cot'*
 'completeopt' 'cot'	string	(default "menu,preview")
@@ -2528,14 +2539,14 @@ A jump table for the options with a short description can be found at |Q_op|.
 		/* vim: set filetype=idl : */
 <	|FileType| |filetypes|
 	When a dot appears in the value then this separates two filetype
-	names.  Example: >c
+	names, it should therefore not be used for a filetype.  Example: >c
 		/* vim: set filetype=c.doxygen : */
 <	This will use the "c" filetype first, then the "doxygen" filetype.
 	This works both for filetype plugins and for syntax files.  More than
 	one dot may appear.
 	This option is not copied to another buffer, independent of the 's' or
 	'S' flag in 'cpoptions'.
-	Only normal file name characters can be used, `/\*?[|<>` are illegal.
+	Only alphanumeric characters, '-' and '_' can be used.
 
 						*'fillchars'* *'fcs'*
 'fillchars' 'fcs'	string	(default "")
@@ -3665,7 +3676,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Otherwise only one space is inserted.
 
 						*'jumpoptions'* *'jop'*
-'jumpoptions' 'jop'	string	(default "unload")
+'jumpoptions' 'jop'	string	(default "clean")
 			global
 	List of words that change the behavior of the |jumplist|.
 	  stack         Make the jumplist behave like the tagstack.
@@ -3678,7 +3689,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 			|alternate-file| or using |mark-motions| try to
 			restore the |mark-view| in which the action occurred.
 
-	  unload        Remove unloaded buffers from the jumplist.
+	  clean         Remove unloaded buffers from the jumplist.
 			EXPERIMENTAL: this flag may change in the future.
 
 						*'keymap'* *'kmp'*
@@ -3688,7 +3699,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Setting this option to a valid keymap name has the side effect of
 	setting 'iminsert' to one, so that the keymap becomes effective.
 	'imsearch' is also set to one, unless it was -1
-	Only normal file name characters can be used, `/\*?[|<>` are illegal.
+	Only alphanumeric characters, '.', '-' and '_' can be used.
 
 						*'keymodel'* *'km'*
 'keymodel' 'km'		string	(default "")
@@ -6004,7 +6015,8 @@ A jump table for the options with a short description can be found at |Q_op|.
 	non-blank of the line.  When off the cursor is kept in the same column
 	(if possible).  This applies to the commands:
 	- CTRL-D, CTRL-U, CTRL-B, CTRL-F, "G", "H", "M", "L", "gg"
-	- "d", "<<" and ">>" with a linewise operator
+	- "d", "<<", "==" and ">>" with a linewise operator
+	  (|operator-resulting-pos|)
 	- "%" with a count
 	- buffer changing commands (CTRL-^, :bnext, :bNext, etc.)
 	- Ex commands that only have a line number, e.g., ":25" or ":+".
@@ -6014,7 +6026,6 @@ A jump table for the options with a short description can be found at |Q_op|.
 						*'statuscolumn'* *'stc'*
 'statuscolumn' 'stc'	string	(default "")
 			local to window
-	EXPERIMENTAL
 	When non-empty, this option determines the content of the area to the
 	side of a window, normally containing the fold, sign and number columns.
 	The format of this option is like that of 'statusline'.
@@ -6392,7 +6403,7 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Syntax autocommand event is triggered with the value as argument.
 	This option is not copied to another buffer, independent of the 's' or
 	'S' flag in 'cpoptions'.
-	Only normal file name characters can be used, `/\*?[|<>` are illegal.
+	Only alphanumeric characters, '.', '-' and '_' can be used.
 
 						*'tabclose'* *'tcl'*
 'tabclose' 'tcl'	string	(default "")
@@ -7063,7 +7074,12 @@ A jump table for the options with a short description can be found at |Q_op|.
 	Some keys will not work, such as CTRL-C, <CR> and Enter.
 	<Esc> can be used, but hitting it twice in a row will still exit
 	command-line as a failsafe measure.
-	Although 'wc' is a number option, you can set it to a special key: >vim
+	Although 'wc' is a number option, it can be specified as a number, a
+	single character, a |key-notation| (e.g. <Up>, <C-F>) or a letter
+	preceded with a caret (e.g. `^F` is CTRL-F): >vim
+		:set wc=27
+		:set wc=X
+		:set wc=^I
 		set wc=<Tab>
 <
 

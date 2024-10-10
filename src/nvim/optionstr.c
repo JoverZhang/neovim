@@ -139,7 +139,7 @@ static char *(p_fdc_values[]) = { "auto", "auto:1", "auto:2", "auto:3", "auto:4"
                                   "5", "6", "7", "8", "9", NULL };
 static char *(p_spo_values[]) = { "camel", "noplainbuffer", NULL };
 static char *(p_icm_values[]) = { "nosplit", "split", NULL };
-static char *(p_jop_values[]) = { "stack", "view", "unload", NULL };
+static char *(p_jop_values[]) = { "stack", "view", "clean", NULL };
 static char *(p_tpf_values[]) = { "BS", "HT", "FF", "ESC", "DEL", "C0", "C1", NULL };
 static char *(p_rdb_values[]) = { "compositor", "nothrottle", "invalid", "nodelta", "line",
                                   "flush", NULL };
@@ -306,26 +306,26 @@ int check_signcolumn(win_T *wp)
       wp->w_minscwidth = 0;
       wp->w_maxscwidth = 1;
     }
-    return OK;
+  } else {
+    if (strncmp(val, "auto:", 5) != 0
+        || strlen(val) != 8
+        || !ascii_isdigit(val[5])
+        || val[6] != '-'
+        || !ascii_isdigit(val[7])) {
+      return FAIL;
+    }
+    // auto:<NUM>-<NUM>
+    int min = val[5] - '0';
+    int max = val[7] - '0';
+    if (min < 1 || max < 2 || min > 8 || min >= max) {
+      return FAIL;
+    }
+    wp->w_minscwidth = min;
+    wp->w_maxscwidth = max;
   }
 
-  if (strncmp(val, "auto:", 5) != 0
-      || strlen(val) != 8
-      || !ascii_isdigit(val[5])
-      || val[6] != '-'
-      || !ascii_isdigit(val[7])) {
-    return FAIL;
-  }
-
-  // auto:<NUM>-<NUM>
-  int min = val[5] - '0';
-  int max = val[7] - '0';
-  if (min < 1 || max < 2 || min > 8 || min >= max) {
-    return FAIL;
-  }
-
-  wp->w_minscwidth = min;
-  wp->w_maxscwidth = max;
+  int scwidth = wp->w_minscwidth <= 0 ? 0 : MIN(wp->w_maxscwidth, wp->w_scwidth);
+  wp->w_scwidth = MAX(wp->w_minscwidth, scwidth);
   return OK;
 }
 
@@ -993,6 +993,51 @@ int expand_set_complete(optexpand_T *args, int *numMatches, char ***matches)
                                ARRAY_SIZE(p_cpt_values) - 1,
                                numMatches,
                                matches);
+}
+
+/// The 'completeitemalign' option is changed.
+const char *did_set_completeitemalign(optset_T *args)
+{
+  char *p = p_cia;
+  unsigned new_cia_flags = 0;
+  bool seen[3] = { false, false, false };
+  int count = 0;
+  char buf[10];
+  while (*p) {
+    copy_option_part(&p, buf, sizeof(buf), ",");
+    if (count >= 3) {
+      return e_invarg;
+    }
+    if (strequal(buf, "abbr")) {
+      if (seen[CPT_ABBR]) {
+        return e_invarg;
+      }
+      new_cia_flags = new_cia_flags * 10 + CPT_ABBR;
+      seen[CPT_ABBR] = true;
+      count++;
+    } else if (strequal(buf, "kind")) {
+      if (seen[CPT_KIND]) {
+        return e_invarg;
+      }
+      new_cia_flags = new_cia_flags * 10 + CPT_KIND;
+      seen[CPT_KIND] = true;
+      count++;
+    } else if (strequal(buf, "menu")) {
+      if (seen[CPT_MENU]) {
+        return e_invarg;
+      }
+      new_cia_flags = new_cia_flags * 10 + CPT_MENU;
+      seen[CPT_MENU] = true;
+      count++;
+    } else {
+      return e_invarg;
+    }
+  }
+  if (new_cia_flags == 0 || count != 3) {
+    return e_invarg;
+  }
+  cia_flags = new_cia_flags;
+  return NULL;
 }
 
 /// The 'completeopt' option is changed.
@@ -2038,8 +2083,6 @@ const char *did_set_signcolumn(optset_T *args)
   if (check_signcolumn(win) != OK) {
     return e_invarg;
   }
-  int scwidth = win->w_minscwidth <= 0 ? 0 : MIN(win->w_maxscwidth, win->w_scwidth);
-  win->w_scwidth = MAX(win->w_minscwidth, scwidth);
   // When changing the 'signcolumn' to or from 'number', recompute the
   // width of the number column if 'number' or 'relativenumber' is set.
   if ((*oldval == 'n' && *(oldval + 1) == 'u') || win->w_minscwidth == SCL_NUM) {

@@ -170,28 +170,26 @@ static void margin_columns_win(win_T *wp, int *left_col, int *right_col)
   // cache previous calculations depending on w_virtcol
   static int saved_w_virtcol;
   static win_T *prev_wp;
+  static int prev_width1;
+  static int prev_width2;
   static int prev_left_col;
   static int prev_right_col;
-  static int prev_col_off;
 
   int cur_col_off = win_col_off(wp);
-  int width1;
-  int width2;
+  int width1 = wp->w_width_inner - cur_col_off;
+  int width2 = width1 + win_col_off2(wp);
 
   if (saved_w_virtcol == wp->w_virtcol && prev_wp == wp
-      && prev_col_off == cur_col_off) {
+      && prev_width1 == width1 && prev_width2 == width2) {
     *right_col = prev_right_col;
     *left_col = prev_left_col;
     return;
   }
 
-  width1 = wp->w_width_inner - cur_col_off;
-  width2 = width1 + win_col_off2(wp);
-
   *left_col = 0;
   *right_col = width1;
 
-  if (wp->w_virtcol >= (colnr_T)width1) {
+  if (wp->w_virtcol >= (colnr_T)width1 && width2 > 0) {
     *right_col = width1 + ((wp->w_virtcol - width1) / width2 + 1) * width2;
   }
   if (wp->w_virtcol >= (colnr_T)width1 && width2 > 0) {
@@ -202,8 +200,9 @@ static void margin_columns_win(win_T *wp, int *left_col, int *right_col)
   prev_left_col = *left_col;
   prev_right_col = *right_col;
   prev_wp = wp;
+  prev_width1 = width1;
+  prev_width2 = width2;
   saved_w_virtcol = wp->w_virtcol;
-  prev_col_off = cur_col_off;
 }
 
 /// Put a single char from an UTF-8 buffer into a line buffer.
@@ -928,7 +927,8 @@ int win_line(win_T *wp, linenr_T lnum, int startrow, int endrow, int col_rows, s
   bool noinvcur = false;                // don't invert the cursor
   bool lnum_in_visual_area = false;
 
-  bool attr_pri = false;                // char_attr has priority
+  int char_attr_pri = 0;                // attributes with high priority
+  int char_attr_base = 0;               // attributes with low priority
   bool area_highlighting = false;       // Visual or incsearch highlighting in this line
   int vi_attr = 0;                      // attributes for Visual and incsearch highlighting
   int area_attr = 0;                    // attributes desired by highlighting
@@ -1742,16 +1742,14 @@ int win_line(win_T *wp, linenr_T lnum, int startrow, int endrow, int col_rows, s
       }
 
       // Decide which of the highlight attributes to use.
-      attr_pri = true;
-
       if (area_attr != 0) {
-        wlv.char_attr = hl_combine_attr(wlv.line_attr, area_attr);
+        char_attr_pri = hl_combine_attr(wlv.line_attr, area_attr);
         if (!highlight_match) {
           // let search highlight show in Visual area if possible
-          wlv.char_attr = hl_combine_attr(search_attr, wlv.char_attr);
+          char_attr_pri = hl_combine_attr(search_attr, char_attr_pri);
         }
       } else if (search_attr != 0) {
-        wlv.char_attr = hl_combine_attr(wlv.line_attr, search_attr);
+        char_attr_pri = hl_combine_attr(wlv.line_attr, search_attr);
       } else if (wlv.line_attr != 0
                  && ((wlv.fromcol == -10 && wlv.tocol == MAXCOL)
                      || wlv.vcol < wlv.fromcol
@@ -1759,15 +1757,12 @@ int win_line(win_T *wp, linenr_T lnum, int startrow, int endrow, int col_rows, s
                      || wlv.vcol >= wlv.tocol)) {
         // Use wlv.line_attr when not in the Visual or 'incsearch' area
         // (area_attr may be 0 when "noinvcur" is set).
-        wlv.char_attr = wlv.line_attr;
+        char_attr_pri = wlv.line_attr;
       } else {
-        attr_pri = false;
-        wlv.char_attr = decor_attr;
+        char_attr_pri = 0;
       }
-
-      if (folded_attr != 0) {
-        wlv.char_attr = hl_combine_attr(folded_attr, wlv.char_attr);
-      }
+      char_attr_base = hl_combine_attr(folded_attr, decor_attr);
+      wlv.char_attr = hl_combine_attr(char_attr_base, char_attr_pri);
     }
 
     if (draw_folded && has_foldtext && wlv.n_extra == 0 && wlv.col == win_col_offset) {
@@ -1998,25 +1993,8 @@ int win_line(win_T *wp, linenr_T lnum, int startrow, int endrow, int col_rows, s
           can_spell = TRISTATE_TO_BOOL(decor_state.spell, can_spell);
         }
 
-        if (folded_attr) {
-          decor_attr = hl_combine_attr(folded_attr, decor_attr);
-        }
-
-        if (decor_attr) {
-          if (!attr_pri) {
-            if (wlv.cul_attr) {
-              wlv.char_attr = 0 != wlv.line_attr_lowprio
-                              ? hl_combine_attr(wlv.cul_attr, decor_attr)
-                              : hl_combine_attr(decor_attr, wlv.cul_attr);
-            } else {
-              wlv.char_attr = decor_attr;
-            }
-          } else {
-            wlv.char_attr = hl_combine_attr(decor_attr, wlv.char_attr);
-          }
-        } else if (!attr_pri) {
-          wlv.char_attr = 0;
-        }
+        char_attr_base = hl_combine_attr(folded_attr, decor_attr);
+        wlv.char_attr = hl_combine_attr(char_attr_base, char_attr_pri);
 
         // Check spelling (unless at the end of the line).
         // Only do this when there is no syntax highlighting, the
@@ -2084,11 +2062,8 @@ int win_line(win_T *wp, linenr_T lnum, int startrow, int endrow, int col_rows, s
           }
         }
         if (spell_attr != 0) {
-          if (!attr_pri) {
-            wlv.char_attr = hl_combine_attr(wlv.char_attr, spell_attr);
-          } else {
-            wlv.char_attr = hl_combine_attr(spell_attr, wlv.char_attr);
-          }
+          char_attr_base = hl_combine_attr(char_attr_base, spell_attr);
+          wlv.char_attr = hl_combine_attr(char_attr_base, char_attr_pri);
         }
 
         if (wp->w_buffer->terminal) {

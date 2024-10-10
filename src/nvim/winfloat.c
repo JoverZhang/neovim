@@ -10,6 +10,7 @@
 #include "nvim/ascii_defs.h"
 #include "nvim/autocmd.h"
 #include "nvim/buffer_defs.h"
+#include "nvim/decoration.h"
 #include "nvim/drawscreen.h"
 #include "nvim/errors.h"
 #include "nvim/globals.h"
@@ -58,7 +59,7 @@ win_T *win_new_float(win_T *wp, bool last, WinConfig fconfig, Error *err)
       if (!tp) {
         return NULL;
       }
-      tp_last = tp->tp_lastwin;
+      tp_last = tp == curtab ? lastwin : tp->tp_lastwin;
       while (tp_last->w_floating && tp_last->w_prev) {
         tp_last = tp_last->w_prev;
       }
@@ -202,7 +203,7 @@ void win_config_float(win_T *wp, WinConfig fconfig)
                                   wp->w_config.border_hl_ids,
                                   sizeof fconfig.border_hl_ids) != 0);
 
-  wp->w_config = fconfig;
+  merge_win_config(&wp->w_config, fconfig);
 
   bool has_border = wp->w_floating && wp->w_config.border;
   for (int i = 0; i < 4; i++) {

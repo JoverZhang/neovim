@@ -1634,7 +1634,8 @@ respectively.
 Javadoc is a program that takes special comments out of Java program files and
 creates HTML pages.  The standard configuration will highlight this HTML code
 similarly to HTML files (see |html.vim|).  You can even add JavaScript and CSS
-inside this code (see below).  The HTML rendering diverges as follows:
+inside this code (see below).  The HTML rendering and the Markdown rendering
+diverge as follows:
   1. The first sentence (all characters up to the first period `.`, which is
      followed by a whitespace character or a line terminator, or up to the
      first block tag, e.g. `@param`, `@return`) is colored as
@@ -1647,8 +1648,13 @@ inside this code (see below).  The HTML rendering diverges as follows:
 	`*Special`	special symbols
      and some of their arguments are colored as
 	`*Function`	function names.
-To turn this feature off, add the following line to your startup file: >
+To turn this feature off for both HTML and Markdown, add the following line to
+your startup file: >
 	:let g:java_ignore_javadoc = 1
+Alternatively, only suppress HTML comments or Markdown comments: >
+	:let g:java_ignore_html = 1
+	:let g:java_ignore_markdown = 1
+See |ft-java-plugin| for additional support available for Markdown comments.
 
 If you use the special Javadoc comment highlighting described above, you can
 also turn on special highlighting for JavaScript, Visual Basic scripts, and
@@ -1683,6 +1689,12 @@ In order to highlight nested parens with different colors, define colors for
 or >
 	:hi javaParen ctermfg=blue guifg=#0000ff
 
+Certain modifiers are incompatible with each other, e.g. `abstract` and
+`final`: >
+	:syn list javaConceptKind
+and can be differently highlighted as a group than other modifiers with >
+	:hi link javaConceptKind NonText
+
 If you notice highlighting errors while scrolling backwards, which are fixed
 when redrawing with CTRL-L, try setting the "g:java_minlines" variable to
 a larger number: >
@@ -1698,10 +1710,12 @@ cycles for such a feature to become either integrated into the platform or
 withdrawn from this effort.  To cater for early adopters, there is optional
 support in Vim for syntax related preview features that are implemented.  You
 can request it by specifying a list of preview feature numbers as follows: >
-	:let g:java_syntax_previews = [430]
+	:let g:java_syntax_previews = [455, 476]
 
 The supported JEP numbers are to be drawn from this table:
 	`430`: String Templates [JDK 21]
+	`455`: Primitive types in Patterns, instanceof, and switch
+	`476`: Module Import Declarations
 
 Note that as soon as the particular preview feature will have been integrated
 into the Java platform, its entry will be removed from the table and related
@@ -1709,7 +1723,7 @@ optionality will be discontinued.
 
 
 JSON			*json.vim* *ft-json-syntax* *g:vim_json_conceal*
-					       *g:vim_json_warnings*
+						*g:vim_json_warnings*
 
 The json syntax file provides syntax highlighting with conceal support by
 default. To disable concealment: >
@@ -5078,10 +5092,12 @@ guisp={color-name}					*guisp*
 	All values are hexadecimal, range from "00" to "ff".  Examples: >
 	    :highlight Comment guifg=#11f0c3 guibg=#ff00ff
 <
-blend={integer}					*highlight-blend*
+blend={integer}					*highlight-blend* *opacity*
 	Override the blend level for a highlight group within the popupmenu
 	or floating windows. Only takes effect if 'pumblend' or 'winblend'
 	is set for the menu or window. See the help at the respective option.
+
+	See also the "blend" flag of |nvim_buf_set_extmark()|.
 
 					*highlight-groups* *highlight-default*
 These are the builtin highlighting groups.  Note that the highlighting depends

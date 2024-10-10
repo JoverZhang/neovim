@@ -1,7 +1,7 @@
 local t = require('test.testutil')
 local n = require('test.functional.testnvim')()
 
-local tt = require('test.functional.terminal.testutil')
+local tt = require('test.functional.testterm')
 local feed_data = tt.feed_data
 local feed, clear = n.feed, n.clear
 local poke_eventloop = n.poke_eventloop
@@ -37,7 +37,7 @@ describe(':terminal window', function()
 
   before_each(function()
     clear()
-    screen = tt.screen_setup()
+    screen = tt.setup_screen()
   end)
 
   it('sets topline correctly #8556', function()
@@ -57,7 +57,6 @@ describe(':terminal window', function()
 
   describe("with 'number'", function()
     it('wraps text', function()
-      skip(is_os('win')) -- todo(clason): unskip when reenabling reflow
       feed([[<C-\><C-N>]])
       feed([[:set numberwidth=1 number<CR>i]])
       screen:expect([[
@@ -107,7 +106,6 @@ describe(':terminal window', function()
 
   describe("with 'statuscolumn'", function()
     it('wraps text', function()
-      skip(is_os('win')) -- todo(clason): unskip when reenabling reflow
       command([[set number statuscolumn=++%l\ \ ]])
       screen:expect([[
         {7:++1  }tty ready                                    |
@@ -198,7 +196,7 @@ describe(':terminal with multigrid', function()
 
   before_each(function()
     clear()
-    screen = tt.screen_setup(0, nil, 50, nil, { ext_multigrid = true })
+    screen = tt.setup_screen(0, nil, 50, nil, { ext_multigrid = true })
   end)
 
   it('resizes to requested size', function()

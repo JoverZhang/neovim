@@ -4,14 +4,10 @@
 #   - pitfalls: https://izzys.casa/2019/02/everything-you-never-wanted-to-know-about-cmake/
 #   - troubleshooting:
 #     - variable_watch https://cmake.org/cmake/help/latest/command/variable_watch.html
+#     - verbose output: cmake --build build --verbose
 
 # Version should match the tested CMAKE_URL in .github/workflows/build.yml.
-cmake_minimum_required(VERSION 3.13)
-
-# Can be removed once minimum version is at least 3.15
-if(POLICY CMP0092)
-  cmake_policy(SET CMP0092 NEW)
-endif()
+cmake_minimum_required(VERSION 3.16)
 
 project(nvim C)
 
@@ -150,9 +146,9 @@ set(NVIM_VERSION_PATCH 0)
 set(NVIM_VERSION_PRERELEASE "-dev") # for package maintainers
 
 # API level
-set(NVIM_API_LEVEL 12)        # Bump this after any API change.
+set(NVIM_API_LEVEL 13)        # Bump this after any API/stdlib change.
 set(NVIM_API_LEVEL_COMPAT 0)  # Adjust this after a _breaking_ API change.
-set(NVIM_API_PRERELEASE false)
+set(NVIM_API_PRERELEASE true)
 
 # Build-type: RelWithDebInfo
 # /Og means something different in MSVC

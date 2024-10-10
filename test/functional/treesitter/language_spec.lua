@@ -8,6 +8,7 @@ local exec_lua = n.exec_lua
 local pcall_err = t.pcall_err
 local matches = t.matches
 local insert = n.insert
+local NIL = vim.NIL
 
 before_each(clear)
 
@@ -15,9 +16,11 @@ describe('treesitter language API', function()
   -- error tests not requiring a parser library
   it('handles missing language', function()
     eq(
-      ".../language.lua:0: no parser for 'borklang' language, see :help treesitter-parsers",
+      '.../treesitter.lua:0: Parser could not be created for buffer 1 and language "borklang"',
       pcall_err(exec_lua, "parser = vim.treesitter.get_parser(0, 'borklang')")
     )
+
+    eq(NIL, exec_lua("return vim.treesitter.get_parser(0, 'borklang', { error = false })"))
 
     -- actual message depends on platform
     matches(
@@ -28,16 +31,11 @@ describe('treesitter language API', function()
       )
     )
 
-    eq(false, exec_lua("return pcall(vim.treesitter.language.add, 'borklang')"))
+    eq(NIL, exec_lua("return vim.treesitter.language.add('borklang')"))
 
     eq(
       false,
       exec_lua("return pcall(vim.treesitter.language.add, 'borklang', { path = 'borkbork.so' })")
-    )
-
-    eq(
-      ".../language.lua:0: no parser for 'borklang' language, see :help treesitter-parsers",
-      pcall_err(exec_lua, "parser = vim.treesitter.language.inspect('borklang')")
     )
 
     matches(
@@ -46,11 +44,8 @@ describe('treesitter language API', function()
     )
   end)
 
-  it('shows error for invalid language name', function()
-    eq(
-      ".../language.lua:0: '/foo/' is not a valid language name",
-      pcall_err(exec_lua, 'vim.treesitter.language.add("/foo/")')
-    )
+  it('does not load parser for invalid language name', function()
+    eq(NIL, exec_lua('vim.treesitter.language.add("/foo/")'))
   end)
 
   it('inspects language', function()
@@ -105,9 +100,10 @@ describe('treesitter language API', function()
       command('set filetype=borklang')
       -- Should throw an error when filetype changes to borklang
       eq(
-        ".../language.lua:0: no parser for 'borklang' language, see :help treesitter-parsers",
+        '.../treesitter.lua:0: Parser could not be created for buffer 1 and language "borklang"',
         pcall_err(exec_lua, "new_parser = vim.treesitter.get_parser(0, 'borklang')")
       )
+      eq(NIL, exec_lua("return vim.treesitter.get_parser(0, 'borklang', { error = false })"))
     end
   )
 
@@ -162,10 +158,10 @@ describe('treesitter language API', function()
   it('retrieve an anonymous node given a range', function()
     insert([[vim.fn.input()]])
 
-    exec_lua([[
-      langtree = vim.treesitter.get_parser(0, "lua")
-      node = langtree:node_for_range({0, 3, 0, 3})
-    ]])
+    exec_lua(function()
+      _G.langtree = vim.treesitter.get_parser(0, 'lua')
+      _G.node = _G.langtree:node_for_range({ 0, 3, 0, 3 })
+    end)
 
     eq('.', exec_lua('return node:type()'))
   end)

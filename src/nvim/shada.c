@@ -231,7 +231,7 @@ typedef struct {
   ShadaEntryType type;
   Timestamp timestamp;
   union {
-    Dictionary header;
+    Dict header;
     struct shada_filemark {
       char name;
       pos_T mark;
@@ -812,7 +812,7 @@ static inline void hms_dealloc(HistoryMergerState *const hms_p)
 
 /// Iterate over global variables
 ///
-/// @warning No modifications to global variable dictionary must be performed
+/// @warning No modifications to global variable Dict must be performed
 ///          while iteration is in progress.
 ///
 /// @param[in]   iter   Iterator. Pass NULL to start iteration.
@@ -1886,13 +1886,18 @@ static inline ShaDaWriteResult shada_read_when_writing(FileDescriptor *const sd_
           shada_free_shada_entry(&entry);
           break;
         }
-        if (wms->global_marks[idx].data.type == kSDItemMissing) {
+
+        // Global or numbered mark.
+        PossiblyFreedShadaEntry *mark
+          = idx < 26 ? &wms->global_marks[idx] : &wms->numbered_marks[idx - 26];
+
+        if (mark->data.type == kSDItemMissing) {
           if (namedfm[idx].fmark.timestamp >= entry.timestamp) {
             shada_free_shada_entry(&entry);
             break;
           }
         }
-        COMPARE_WITH_ENTRY(&wms->global_marks[idx], entry);
+        COMPARE_WITH_ENTRY(mark, entry);
       }
       break;
     case kSDItemChange:
@@ -2911,7 +2916,7 @@ static void shada_free_shada_entry(ShadaEntry *const entry)
     xfree(entry->data.unknown_item.contents);
     break;
   case kSDItemHeader:
-    api_free_dictionary(entry->data.header);
+    api_free_dict(entry->data.header);
     break;
   case kSDItemChange:
   case kSDItemJump:
@@ -3230,7 +3235,7 @@ shada_read_next_item_start:
   case kSDItemHeader:
     // TODO(bfredl): header is written to file and provides useful debugging
     // info. It is never read by nvim (earlier we parsed it back to a
-    // Dictionary, but that value was never used)
+    // Dict, but that value was never used)
     break;
   case kSDItemSearchPattern: {
     Dict(_shada_search_pat) *it = &entry->data.search_pattern;

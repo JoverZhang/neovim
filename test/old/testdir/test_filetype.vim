@@ -224,7 +224,8 @@ func s:GetFilenameChecks() abort
     \            '.coveragerc', '.pypirc', '.gitlint', '.oelint.cfg', 'pylintrc', '.pylintrc',
     \            '/home/user/.config/bpython/config', '/home/user/.config/mypy/config', '.wakatime.cfg', '.replyrc',
     \            'psprint.conf', 'sofficerc', 'any/.config/lxqt/globalkeyshortcuts.conf', 'any/.config/screengrab/screengrab.conf',
-    \            'any/.local/share/flatpak/repo/config', '.notmuch-config'],
+    \            'any/.local/share/flatpak/repo/config', '.notmuch-config', '.notmuch-config.myprofile',
+    \            '~/.config/notmuch/myprofile/config'] + s:WhenConfigHome('$XDG_CONFIG_HOME/notmuch/myprofile/config'),
     \ 'dot': ['file.dot', 'file.gv'],
     \ 'dracula': ['file.drac', 'file.drc', 'file.lvs', 'file.lpe', 'drac.file'],
     \ 'dtd': ['file.dtd'],
@@ -339,6 +340,7 @@ func s:GetFilenameChecks() abort
     \ 'hostconf': ['/etc/host.conf', 'any/etc/host.conf'],
     \ 'hostsaccess': ['/etc/hosts.allow', '/etc/hosts.deny', 'any/etc/hosts.allow', 'any/etc/hosts.deny'],
     \ 'html': ['file.html', 'file.htm', 'file.cshtml', 'file.component.html'],
+    \ 'http': ['file.http'],
     \ 'htmlm4': ['file.html.m4'],
     \ 'httest': ['file.htt', 'file.htb'],
     \ 'hurl': ['file.hurl'],
@@ -361,11 +363,12 @@ func s:GetFilenameChecks() abort
     \ 'janet': ['file.janet'],
     \ 'java': ['file.java', 'file.jav'],
     \ 'javacc': ['file.jj', 'file.jjt'],
-    \ 'javascript': ['file.js', 'file.jsm', 'file.javascript', 'file.es', 'file.mjs', 'file.cjs', '.node_repl_history'],
+    \ 'javascript': ['file.js', 'file.jsm', 'file.javascript', 'file.es', 'file.mjs', 'file.cjs', '.node_repl_history', '.bun_repl_history', 'deno_history.txt'],
     \ 'javascript.glimmer': ['file.gjs'],
     \ 'javascriptreact': ['file.jsx'],
     \ 'jess': ['file.clp'],
     \ 'jgraph': ['file.jgr'],
+    \ 'jinja': ['file.jinja'],
     \ 'jj': ['file.jjdescription'],
     \ 'jq': ['file.jq'],
     \ 'jovial': ['file.jov', 'file.j73', 'file.jovial'],
@@ -474,6 +477,7 @@ func s:GetFilenameChecks() abort
     \ 'mgp': ['file.mgp'],
     \ 'mib': ['file.mib', 'file.my'],
     \ 'mix': ['file.mix', 'file.mixal'],
+    \ 'mlir': ['file.mlir'],
     \ 'mma': ['file.nb', 'file.wl'],
     \ 'mmp': ['file.mmp'],
     \ 'modconf': ['/etc/modules.conf', '/etc/modules', '/etc/conf.modules', '/etc/modprobe.file', 'any/etc/conf.modules', 'any/etc/modprobe.file', 'any/etc/modules', 'any/etc/modules.conf'],
@@ -600,6 +604,7 @@ func s:GetFilenameChecks() abort
     \ 'radiance': ['file.rad', 'file.mat'],
     \ 'raku': ['file.pm6', 'file.p6', 'file.t6', 'file.pod6', 'file.raku', 'file.rakumod', 'file.rakudoc', 'file.rakutest'],
     \ 'raml': ['file.raml'],
+    \ 'rapid': ['file.sysx', 'file.Sysx', 'file.SysX', 'file.SYSx', 'file.SYSX', 'file.modx', 'file.Modx', 'file.ModX', 'file.MODx', 'file.MODX'],
     \ 'rasi': ['file.rasi'],
     \ 'ratpoison': ['.ratpoisonrc', 'ratpoisonrc'],
     \ 'rbs': ['file.rbs'],
@@ -632,6 +637,7 @@ func s:GetFilenameChecks() abort
     \ 'rtf': ['file.rtf'],
     \ 'ruby': ['.irbrc', 'irbrc', '.irb_history', 'irb_history', 'file.rb', 'file.rbw', 'file.gemspec', 'file.ru', 'Gemfile', 'file.builder', 'file.rxml', 'file.rjs', 'file.rant', 'file.rake', 'rakefile', 'Rakefile', 'rantfile', 'Rantfile', 'rakefile-file', 'Rakefile-file', 'Puppetfile', 'Vagrantfile'],
     \ 'rust': ['file.rs'],
+    \ 'salt': ['file.sls'],
     \ 'samba': ['smb.conf'],
     \ 'sas': ['file.sas'],
     \ 'sass': ['file.sass'],
@@ -1150,15 +1156,14 @@ func Test_cfg_file()
   unlet g:filetype_cfg
 
   " RAPID cfg
-  let ext = 'cfg'
   for i in ['EIO', 'MMC', 'MOC', 'PROC', 'SIO', 'SYS']
-    call writefile([i .. ':CFG'], 'cfgfile.' .. ext)
-    execute "split cfgfile." .. ext
-    call assert_equal('rapid', &filetype)
-    bwipe!
-    call delete('cfgfile.' .. ext)
-    " check different case of file extension
-    let ext = substitute(ext, '\(\l\)', '\u\1', '')
+    for ext in ['cfg', 'Cfg', 'CFG']
+      call writefile([i .. ':CFG'], 'cfgfile.' .. ext)
+      execute "split cfgfile." .. ext
+      call assert_equal('rapid', &filetype)
+      bwipe!
+      call delete('cfgfile.' .. ext)
+    endfor
   endfor
 
   " clean up

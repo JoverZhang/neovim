@@ -148,6 +148,9 @@ end
 
 local function detect_noext(path, bufnr)
   local root = fn.fnamemodify(path, ':r')
+  if root == path then
+    return
+  end
   return M.match({ buf = bufnr, filename = root })
 end
 
@@ -280,12 +283,7 @@ local extension = {
   cfi = 'cf',
   hgrc = 'cfg',
   cfg = detect.cfg,
-  cfG = detect.cfg,
-  cFg = detect.cfg,
-  cFG = detect.cfg,
   Cfg = detect.cfg,
-  CfG = detect.cfg,
-  CFg = detect.cfg,
   CFG = detect.cfg,
   chf = 'ch',
   chai = 'chaiscript',
@@ -370,12 +368,7 @@ local extension = {
   drt = 'dart',
   ds = 'datascript',
   dat = detect.dat,
-  daT = detect.dat,
-  dAt = detect.dat,
-  dAT = detect.dat,
   Dat = detect.dat,
-  DaT = detect.dat,
-  DAt = detect.dat,
   DAT = detect.dat,
   dcd = 'dcd',
   decl = detect.decl,
@@ -585,6 +578,7 @@ local extension = {
   stm = detect.html,
   htt = 'httest',
   htb = 'httest',
+  http = 'http',
   hurl = 'hurl',
   hw = detect.hw,
   module = detect.hw,
@@ -622,6 +616,7 @@ local extension = {
   jsx = 'javascriptreact',
   clp = 'jess',
   jgr = 'jgraph',
+  jinja = 'jinja',
   jjdescription = 'jj',
   j73 = 'jovial',
   jov = 'jovial',
@@ -658,12 +653,7 @@ local extension = {
   kt = 'kotlin',
   ktm = 'kotlin',
   sub = 'krl',
-  suB = 'krl',
-  sUb = 'krl',
-  sUB = 'krl',
   Sub = 'krl',
-  SuB = 'krl',
-  SUb = 'krl',
   SUB = 'krl',
   ks = 'kscript',
   k = 'kwt',
@@ -699,12 +689,7 @@ local extension = {
   lite = 'lite',
   livemd = 'livebook',
   log = detect.log,
-  loG = detect.log,
-  lOg = detect.log,
-  lOG = detect.log,
   Log = detect.log,
-  LoG = detect.log,
-  LOg = detect.log,
   LOG = detect.log,
   lgt = 'logtalk',
   lotos = 'lotos',
@@ -767,18 +752,14 @@ local extension = {
   mib = 'mib',
   mix = 'mix',
   mixal = 'mix',
+  mlir = 'mlir',
   mm = detect.mm,
   nb = 'mma',
   wl = 'mma',
   mmp = 'mmp',
   mms = detect.mms,
   mod = detect.mod,
-  moD = detect.mod,
-  mOd = detect.mod,
-  mOD = detect.mod,
   Mod = detect.mod,
-  MoD = detect.mod,
-  MOd = detect.mod,
   MOD = detect.mod,
   DEF = 'modula2',
   m3 = 'modula3',
@@ -948,12 +929,7 @@ local extension = {
   ih = 'ppwiz',
   action = 'privoxy',
   prg = detect.prg,
-  prG = detect.prg,
-  pRg = detect.prg,
-  pRG = detect.prg,
   Prg = detect.prg,
-  PrG = detect.prg,
-  PRg = detect.prg,
   PRG = detect.prg,
   pc = 'proc',
   pdb = 'prolog',
@@ -996,6 +972,18 @@ local extension = {
   t6 = 'raku',
   p6 = 'raku',
   raml = 'raml',
+  sysx = 'rapid',
+  sysX = 'rapid',
+  Sysx = 'rapid',
+  SysX = 'rapid',
+  SYSX = 'rapid',
+  SYSx = 'rapid',
+  modx = 'rapid',
+  modX = 'rapid',
+  Modx = 'rapid',
+  ModX = 'rapid',
+  MODX = 'rapid',
+  MODx = 'rapid',
   rasi = 'rasi',
   rbs = 'rbs',
   rego = 'rego',
@@ -1053,6 +1041,7 @@ local extension = {
   rake = 'ruby',
   rs = 'rust',
   sage = 'sage',
+  sls = 'salt',
   sas = 'sas',
   sass = 'sass',
   sa = 'sather',
@@ -1133,12 +1122,7 @@ local extension = {
   sqr = 'sqr',
   nut = 'squirrel',
   src = detect.src,
-  srC = detect.src,
-  sRc = detect.src,
-  sRC = detect.src,
   Src = detect.src,
-  SrC = detect.src,
-  SRc = detect.src,
   SRC = detect.src,
   s28 = 'srec',
   s37 = 'srec',
@@ -1168,12 +1152,7 @@ local extension = {
   swig = 'swig',
   swg = 'swig',
   sys = detect.sys,
-  syS = detect.sys,
-  sYs = detect.sys,
-  sYS = detect.sys,
   Sys = detect.sys,
-  SyS = detect.sys,
-  SYs = detect.sys,
   SYS = detect.sys,
   svh = 'systemverilog',
   sv = 'systemverilog',
@@ -1409,8 +1388,7 @@ local extension = {
   ['dpkg-new'] = detect_noext,
   ['in'] = function(path, bufnr)
     if vim.fs.basename(path) ~= 'configure.in' then
-      local root = fn.fnamemodify(path, ':r')
-      return M.match({ buf = bufnr, filename = root })
+      return detect_noext(path, bufnr)
     end
   end,
   new = detect_noext,
@@ -1605,7 +1583,9 @@ local filename = {
   ['ipf.conf'] = 'ipfilter',
   ['ipf6.conf'] = 'ipfilter',
   ['ipf.rules'] = 'ipfilter',
+  ['.bun_repl_history'] = 'javascript',
   ['.node_repl_history'] = 'javascript',
+  ['deno_history.txt'] = 'javascript',
   ['Pipfile.lock'] = 'json',
   ['.firebaserc'] = 'json',
   ['.prettierrc'] = 'json',
@@ -2133,6 +2113,8 @@ local pattern = {
     ['/bpython/config$'] = 'dosini',
     ['/flatpak/repo/config$'] = 'dosini',
     ['/mypy/config$'] = 'dosini',
+    ['^${HOME}/%.config/notmuch/.*/config$'] = 'dosini',
+    ['^${XDG_CONFIG_HOME}/notmuch/.*/config$'] = 'dosini',
     ['^${XDG_CONFIG_HOME}/git/config$'] = 'gitconfig',
     ['%.git/config%.worktree$'] = 'gitconfig',
     ['%.git/config$'] = 'gitconfig',
@@ -2283,6 +2265,7 @@ local pattern = {
   ['^%.'] = {
     ['^%.cshrc'] = detect.csh,
     ['^%.login'] = detect.csh,
+    ['^%.notmuch%-config%.'] = 'dosini',
     ['^%.gitsendemail%.msg%.......$'] = 'gitsendemail',
     ['^%.kshrc'] = detect.ksh,
     ['^%.article%.%d+$'] = 'mail',
@@ -2857,6 +2840,7 @@ end
 --- Note: this uses |nvim_get_option_value()| but caches the result.
 --- This means |ftplugin| and |FileType| autocommands are only
 --- triggered once and may not reflect later changes.
+--- @since 11
 --- @param filetype string Filetype
 --- @param option string Option name
 --- @return string|boolean|integer: Option value

@@ -1160,7 +1160,7 @@ static void do_filter(linenr_T line1, linenr_T line2, exarg_T *eap, char *cmd, b
   linenr_T read_linecount = curbuf->b_ml.ml_line_count;
 
   // Pass on the kShellOptDoOut flag when the output is being redirected.
-  call_shell(cmd_buf, (ShellOpts)(kShellOptFilter | shell_flags), NULL);
+  call_shell(cmd_buf, kShellOptFilter | shell_flags, NULL);
   xfree(cmd_buf);
 
   did_check_timestamps = false;
@@ -1305,7 +1305,7 @@ void do_shell(char *cmd, int flags)
   // This ui_cursor_goto is required for when the '\n' resulted in a "delete line
   // 1" command to the terminal.
   ui_cursor_goto(msg_row, msg_col);
-  call_shell(cmd, (ShellOpts)flags, NULL);
+  call_shell(cmd, flags, NULL);
   if (msg_silent == 0) {
     msg_didout = true;
   }
@@ -2259,6 +2259,16 @@ int do_ecmd(int fnum, char *ffname, char *sfname, exarg_T *eap, linenr_T newlnum
       set_bufref(&old_curbuf, curbuf);
     }
     if (buf == NULL) {
+      goto theend;
+    }
+    // autocommands try to edit a file that is goind to be removed, abort
+    if (buf_locked(buf)) {
+      // window was split, but not editing the new buffer, reset b_nwindows again
+      if (oldwin == NULL
+          && curwin->w_buffer != NULL
+          && curwin->w_buffer->b_nwindows > 1) {
+        curwin->w_buffer->b_nwindows--;
+      }
       goto theend;
     }
     if (curwin->w_alt_fnum == buf->b_fnum && prev_alt_fnum != 0) {

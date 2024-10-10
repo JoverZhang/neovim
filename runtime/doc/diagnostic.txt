@@ -733,6 +733,9 @@ hide({namespace}, {bufnr})                             *vim.diagnostic.hide()*
 is_enabled({filter})                             *vim.diagnostic.is_enabled()*
     Check whether diagnostics are enabled.
 
+    Attributes: ~
+        Since: 0.10.0
+
     Parameters: ~
       • {filter}  (`table?`) Optional filters |kwargs|, or `nil` for all.
                   • {ns_id}? (`integer`) Diagnostic namespace, or `nil` for
@@ -831,7 +834,7 @@ setloclist({opts})                               *vim.diagnostic.setloclist()*
                   after setting.
                 • {title}? (`string`) Title of the location list. Defaults to
                   "Diagnostics".
-                • {severity}? (`vim.diagnostic.Severity`) See
+                • {severity}? (`vim.diagnostic.SeverityFilter`) See
                   |diagnostic-severity|.
 
 setqflist({opts})                                 *vim.diagnostic.setqflist()*
@@ -845,7 +848,7 @@ setqflist({opts})                                 *vim.diagnostic.setqflist()*
                   after setting.
                 • {title}? (`string`) Title of quickfix list. Defaults to
                   "Diagnostics".
-                • {severity}? (`vim.diagnostic.Severity`) See
+                • {severity}? (`vim.diagnostic.SeverityFilter`) See
                   |diagnostic-severity|.
 
                                                        *vim.diagnostic.show()*

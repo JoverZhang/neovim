@@ -49,7 +49,7 @@ if(ENABLE_LIBINTL)
 endif()
 
 if(ENABLE_WASMTIME)
-  find_package(Wasmtime 24.0.0 EXACT REQUIRED)
+  find_package(Wasmtime 25.0.2 EXACT REQUIRED)
   target_link_libraries(main_lib INTERFACE wasmtime)
   target_compile_definitions(nvim_bin PRIVATE HAVE_WASMTIME)
 endif()
@@ -160,9 +160,6 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
   # ENABLE_EXPORTS is set to true. See
   # https://github.com/neovim/neovim/issues/25295
   target_link_options(nvim_bin PRIVATE "-Wl,-export_dynamic")
-  # Apple Clang 16's new deduplication pass leads to lock-up on start
-  # TODO(clason): verify that problem remains after release or remove
-  target_link_options(nvim_bin PRIVATE "-Wl,-no_deduplicate")
 elseif(CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
   target_link_libraries(main_lib INTERFACE pthread c++abi)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS")
@@ -417,10 +414,10 @@ list(SORT NVIM_HEADERS)
 
 foreach(sfile ${NVIM_SOURCES})
   get_filename_component(f ${sfile} NAME)
-  if(WIN32 AND ${f} MATCHES "^(pty_process_unix.c)$")
+  if(WIN32 AND ${f} MATCHES "^(pty_proc_unix.c)$")
     list(REMOVE_ITEM NVIM_SOURCES ${sfile})
   endif()
-  if(NOT WIN32 AND ${f} MATCHES "^(pty_process_win.c)$")
+  if(NOT WIN32 AND ${f} MATCHES "^(pty_proc_win.c)$")
     list(REMOVE_ITEM NVIM_SOURCES ${sfile})
   endif()
   if(NOT WIN32 AND ${f} MATCHES "^(pty_conpty_win.c)$")
@@ -436,7 +433,7 @@ foreach(hfile ${NVIM_HEADERS})
   if(WIN32 AND ${f} MATCHES "^(unix_defs.h)$")
     list(REMOVE_ITEM NVIM_HEADERS ${hfile})
   endif()
-  if(WIN32 AND ${f} MATCHES "^(pty_process_unix.h)$")
+  if(WIN32 AND ${f} MATCHES "^(pty_proc_unix.h)$")
     list(REMOVE_ITEM NVIM_HEADERS ${hfile})
   endif()
   if(NOT WIN32 AND ${f} MATCHES "^(win_defs.h)$")
@@ -832,12 +829,12 @@ find_program(CLANG_TIDY_PRG clang-tidy)
 set(EXCLUDE_CLANG_TIDY typval_encode.c.h ui_events.in.h)
 if(WIN32)
   list(APPEND EXCLUDE_CLANG_TIDY
-    os/pty_process_unix.h
+    os/pty_proc_unix.h
     os/unix_defs.h)
 else()
   list(APPEND EXCLUDE_CLANG_TIDY
     os/win_defs.h
-    os/pty_process_win.h
+    os/pty_proc_win.h
     os/pty_conpty_win.h
     os/os_win_console.h)
 endif()
@@ -865,8 +862,11 @@ add_glob_target(
   -clang-analyzer-core.NullDereference,
   -clang-analyzer-core.UndefinedBinaryOperatorResult,
   -clang-analyzer-core.uninitialized.Assign,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
   -clang-analyzer-optin.performance.Padding,
   -clang-analyzer-security.insecureAPI.strcpy,
+  -clang-analyzer-unix.StdCLibraryFunctions,
+  -clang-analyzer-unix.Stream,
   ${CLANG_ANALYZER_IGNORE}
   '
   EXCLUDE ${EXCLUDE_CLANG_TIDY})

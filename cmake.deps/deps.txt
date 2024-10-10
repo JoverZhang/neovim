@@ -1,14 +1,14 @@
-LIBUV_URL https://github.com/libuv/libuv/archive/0a00e80c3686b93eccb9a801954e86bd7d7fe6ab.tar.gz
-LIBUV_SHA256 8d240ad56f779ebca94a249b2a2c71725d89182e732cf53c1f6d85098cc9bcb3
+LIBUV_URL https://github.com/libuv/libuv/archive/v1.49.0.tar.gz
+LIBUV_SHA256 a10656a0865e2cff7a1b523fa47d0f5a9c65be963157301f814d1cc5dbd4dc1d
 
-LUAJIT_URL https://github.com/LuaJIT/LuaJIT/archive/f725e44cda8f359869bf8f92ce71787ddca45618.tar.gz
-LUAJIT_SHA256 2b5514bd6a6573cb6111b43d013e952cbaf46762d14ebe26c872ddb80b5a84e0
+LUAJIT_URL https://github.com/LuaJIT/LuaJIT/archive/97813fb924edf822455f91a5fbbdfdb349e5984f.tar.gz
+LUAJIT_SHA256 cbf1647acbd340c62b9c342dae43290762efa1b26d8bf8457f143fabf8ed86c7
 
 LUA_URL https://www.lua.org/ftp/lua-5.1.5.tar.gz
 LUA_SHA256 2640fc56a795f29d28ef15e13c34a47e223960b0240e8cb0a82d9b0738695333
 
-UNIBILIUM_URL https://github.com/neovim/unibilium/archive/ab28a2ddb86a144194a798bcf1fef1ab4f981ab7.tar.gz
-UNIBILIUM_SHA256 7c0386fc48452632868e0dcb8e7ed140d67a3da79e39ceee54c1ba7a495ad625
+UNIBILIUM_URL https://github.com/neovim/unibilium/archive/v2.1.2.tar.gz
+UNIBILIUM_SHA256 370ecb07fbbc20d91d1b350c55f1c806b06bf86797e164081ccc977fc9b3af7a
 
 LUV_URL https://github.com/luvit/luv/releases/download/1.48.0-2/luv-1.48.0-2.tar.gz
 LUV_SHA256 2c3a1ddfebb4f6550293a40ee789f7122e97647eede51511f57203de48c03b7a
@@ -50,11 +50,11 @@ TREESITTER_QUERY_URL https://github.com/tree-sitter-grammars/tree-sitter-query/a
 TREESITTER_QUERY_SHA256 d3a423ab66dc62b2969625e280116678a8a22582b5ff087795222108db2f6a6e
 TREESITTER_MARKDOWN_URL https://github.com/tree-sitter-grammars/tree-sitter-markdown/archive/v0.3.2.tar.gz
 TREESITTER_MARKDOWN_SHA256 5dac48a6d971eb545aab665d59a18180d21963afc781bbf40f9077c06cb82ae5
-TREESITTER_URL https://github.com/tree-sitter/tree-sitter/archive/v0.23.0.tar.gz
-TREESITTER_SHA256 6403b361b0014999e96f61b9c84d6950d42f0c7d6e806be79382e0232e48a11b
+TREESITTER_URL https://github.com/tree-sitter/tree-sitter/archive/v0.24.3.tar.gz
+TREESITTER_SHA256 0a8d0cf8e09caba22ed0d8439f7fa1e3d8453800038e43ccad1f34ef29537da1
 
-WASMTIME_URL https://github.com/bytecodealliance/wasmtime/archive/v24.0.0.tar.gz
-WASMTIME_SHA256 2ccb49bb3bfa4d86907ad4c80d1147aef6156c7b6e3f7f14ed02a39de9761155
+WASMTIME_URL https://github.com/bytecodealliance/wasmtime/archive/v25.0.2.tar.gz
+WASMTIME_SHA256 6d1c17c756b83f29f629963228e5fa208ba9d6578421ba2cd07132b6a120accb
 
 UNCRUSTIFY_URL https://github.com/uncrustify/uncrustify/archive/uncrustify-0.79.0.tar.gz
 UNCRUSTIFY_SHA256 e7afaeabf636b7f0ce4e3e9747b95f7bd939613a8db49579755dddf44fedca5f

@@ -596,13 +596,13 @@ describe('highlight', function()
     ]])
     screen:expect(
       [[
-      {1:  }^                       |
+      {1:  }{5:^                       }|
       {1:  }{2:01}{3:234 67}{2:89}{5:             }|
       {4:~                        }|*2
       {7:[No Name] [+]            }|
-      {1:  }                       |
       {1:  }{6:-----------------------}|
-      {4:~                        }|
+      {1:  }{6:-----------------------}|
+      {1:  }                       |
       {8:[No Name]                }|
                                |
     ]],
@@ -1075,6 +1075,44 @@ describe('CursorLine and CursorLineNr highlights', function()
       {101:1 }aaaaaaaaaaaaaaaaaa|
       {101:  }{100:>>>}aaaaaaaaaaaa   |
       {5:-- INSERT --}        |
+    ]])
+  end)
+
+  -- oldtest: Test_cursorline_screenline_resize()
+  it("'cursorlineopt' screenline is updated on window resize", function()
+    local screen = Screen.new(75, 8)
+    screen:attach()
+    exec([[
+      50vnew
+      call setline(1, repeat('xyz ', 30))
+      setlocal number cursorline cursorlineopt=screenline
+      normal! $
+    ]])
+    screen:expect([[
+      {8:  1 }xyz xyz xyz xyz xyz xyz xyz xyz xyz xyz xyz xy│                        |
+      {8:    }z xyz xyz xyz xyz xyz xyz xyz xyz xyz xyz xyz │{1:~                       }|
+      {8:    }{21:xyz xyz xyz xyz xyz xyz xyz^                   }│{1:~                       }|
+      {1:~                                                 }│{1:~                       }|*3
+      {3:[No Name] [+]                                      }{2:[No Name]               }|
+                                                                                 |
+    ]])
+    command('vertical resize -4')
+    screen:expect([[
+      {8:  1 }xyz xyz xyz xyz xyz xyz xyz xyz xyz xyz xy│                            |
+      {8:    }z xyz xyz xyz xyz xyz xyz xyz xyz xyz xyz │{1:~                           }|
+      {8:    }{21:xyz xyz xyz xyz xyz xyz xyz xyz xyz^       }│{1:~                           }|
+      {1:~                                             }│{1:~                           }|*3
+      {3:[No Name] [+]                                  }{2:[No Name]                   }|
+                                                                                 |
+    ]])
+    command('set cpoptions+=n')
+    screen:expect([[
+      {8:  1 }xyz xyz xyz xyz xyz xyz xyz xyz xyz xyz xy│                            |
+      z xyz xyz xyz xyz xyz xyz xyz xyz xyz xyz xyz │{1:~                           }|
+      {21:xyz xyz xyz xyz xyz xyz xyz xyz^               }│{1:~                           }|
+      {1:~                                             }│{1:~                           }|*3
+      {3:[No Name] [+]                                  }{2:[No Name]                   }|
+                                                                                 |
     ]])
   end)
 
